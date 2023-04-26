@@ -4,10 +4,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData
 
 # SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
-SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:@127.0.0.1:3306/colocacion"
+SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:@127.0.0.1:3306/operaciones"
 
 
-metadata = sqlalchemy.MetaData()
+metadata = MetaData()
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL)

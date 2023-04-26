@@ -1,6 +1,5 @@
 # from sqlalchemy.orm import Session
-from ..database import engine
-from . import models, schemas
+from database.database import engine
 import json
 
 conn = engine.connect()

@@ -1,5 +1,5 @@
 import sqlalchemy
-from config import metadata
+from database.database import metadata
 from datetime import date
 
 

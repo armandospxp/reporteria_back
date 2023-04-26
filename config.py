@@ -1,11 +1,9 @@
-from ...database import engine as database
+from fastapi import FastAPI
+from database.database import engine as database
 
 
 ''' FastAPI CONFIGURATION '''
-app = FastAPI(__name__,
-              title="FastAPI reporteria",
-              docs_url="/docs", redoc_url="/redocs"
-)
+app = FastAPI(title="FastAPI reporteria")
 
 
 
