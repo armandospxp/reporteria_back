@@ -1,9 +1,79 @@
-from pydantic import BaseModel
+import sqlalchemy
+from config import metadata
+from datetime import date
 
 
-''' Model Schema Using Pydantic '''
-
-
-class User(BaseModel):
-    username: str
-    password: str
+''' SQLAlchemy Model'''
+posts = sqlalchemy.Table(
+    "colocacion",
+    metadata,
+    sqlalchemy.Column("ANALISTA", sqlalchemy.String()),
+    sqlalchemy.Column("APORTA_IPS", sqlalchemy.String(100)),
+    sqlalchemy.Column("APROB_LINEA", sqlalchemy.String(100)),
+    sqlalchemy.Column("APROB_SCORING", sqlalchemy.String(100)),
+    sqlalchemy.Column("ATRASO", sqlalchemy.Integer()),
+    sqlalchemy.Column("BANCA", sqlalchemy.Integer()),
+    sqlalchemy.Column("BANCA_GRUPO", sqlalchemy.String(100)),
+    sqlalchemy.Column("CALIFICACION", sqlalchemy.String(100)),
+    sqlalchemy.Column("CANAL", sqlalchemy.String(100)),
+    sqlalchemy.Column("CANT_CONDICIONADOS", sqlalchemy.Integer()),
+    sqlalchemy.Column("CANT_CUOTAS", sqlalchemy.Integer()),
+    sqlalchemy.Column("CANT_EXCEPCIONES", sqlalchemy.Integer()),
+    sqlalchemy.Column("CIUDAD_LABORAL", sqlalchemy.String(100)),
+    sqlalchemy.Column("CIUDAD_PARTICULAR", sqlalchemy.String(100)),
+    sqlalchemy.Column("CUENTA", sqlalchemy.Integer()),
+    sqlalchemy.Column("DEPARTAMENTO_LAB", sqlalchemy.String(100)),
+    sqlalchemy.Column("DESEMBOLSO_INSITU", sqlalchemy.String(100)),
+    sqlalchemy.Column("DOCUMENTO", sqlalchemy.Integer()),
+    sqlalchemy.Column("EMPRESA", sqlalchemy.String(100)),
+    sqlalchemy.Column("ESTADO", sqlalchemy.Integer()),
+    sqlalchemy.Column("EXCEP_DESEMBOLSO", sqlalchemy.String(100)),
+    sqlalchemy.Column("EXCEP_PROCESO", sqlalchemy.String(100)),
+    sqlalchemy.Column("EXCEP_REP_APROB", sqlalchemy.String(100)),
+    sqlalchemy.Column("FAJA", sqlalchemy.String(100)),
+    sqlalchemy.Column("FECHA_INGRESO", sqlalchemy.Date()),
+    sqlalchemy.Column("FECHA_VTA", sqlalchemy.String(100)),
+    sqlalchemy.Column("FECHAOPE", sqlalchemy.Date()),
+    sqlalchemy.Column("FECHAOPE_GRUPO", sqlalchemy.String(100)),
+    sqlalchemy.Column("FRANQUICIA", sqlalchemy.String(100)),
+    sqlalchemy.Column("FRANQUICIA_GRUPO", sqlalchemy.String(100)),
+    sqlalchemy.Column("HORA_APROBACION", sqlalchemy.String(100)),
+    sqlalchemy.Column("HORA_DESEMBOLSO", sqlalchemy.String(100)),
+    sqlalchemy.Column("MARCA_PREAPROBADO", sqlalchemy.String(100)),
+    sqlalchemy.Column("MEDIO", sqlalchemy.Integer()),
+    sqlalchemy.Column("MEDIO_GRUPO", sqlalchemy.String(100)),
+    sqlalchemy.Column("NRO_OPERACION", sqlalchemy.Integer()),
+    sqlalchemy.Column("PLAZO_OPE_CONSOLIDADA", sqlalchemy.Integer()),
+    sqlalchemy.Column("RANGO_CAPITAL", sqlalchemy.String(100)),
+    sqlalchemy.Column("RANGO_EDAD", sqlalchemy.String(100)),
+    sqlalchemy.Column("RANGO_SCORE", sqlalchemy.String(100)),
+    sqlalchemy.Column("RECHAZO_CARGA", sqlalchemy.Integer()),
+    sqlalchemy.Column("SCORE", sqlalchemy.Integer()),
+    sqlalchemy.Column("SCORING", sqlalchemy.String(100)),
+    sqlalchemy.Column("SUCURSAL", sqlalchemy.String(100)),
+    sqlalchemy.Column("SUCURSAL_DESEMBOLSO", sqlalchemy.String(100)),
+    sqlalchemy.Column("SUPERVISOR", sqlalchemy.String(100)),
+    sqlalchemy.Column("SUPERVISOR_NOMBRE", sqlalchemy.String(100)),
+    sqlalchemy.Column("tiempo_desembolso", sqlalchemy.String(100)),
+    sqlalchemy.Column("TIPO", sqlalchemy.Integer()),
+    sqlalchemy.Column("TIPO_DESEMBOLSO", sqlalchemy.String(100)),
+    sqlalchemy.Column("TIPO_APROBACION", sqlalchemy.String(100)),
+    sqlalchemy.Column("TIPO_PROCESO", sqlalchemy.String(100)),
+    sqlalchemy.Column("TIPO_SUCURSAL", sqlalchemy.String(100)),
+    sqlalchemy.Column("tramos_monto", sqlalchemy.String(100)),
+    sqlalchemy.Column("VENDEDOR", sqlalchemy.Integer()),
+    sqlalchemy.Column("VENDEDOR_NOMBRE", sqlalchemy.String(100)),
+    sqlalchemy.Column("VIA_INGRESO", sqlalchemy.String(100)),
+    sqlalchemy.Column("ANALYTICS_CLUSTER", sqlalchemy.String(100)),
+    sqlalchemy.Column("CAPITAL", sqlalchemy.Integer()),
+    sqlalchemy.Column("CAPITAL_CONSOLIDADO", sqlalchemy.String(100)),
+    sqlalchemy.Column("CAPITAL_VTA", sqlalchemy.String(100)),
+    sqlalchemy.Column("DIASPROCESO", sqlalchemy.Integer()),
+    sqlalchemy.Column("INGRESO_CLIENTE_DESEMBOLSO", sqlalchemy.Integer()),
+    sqlalchemy.Column("INTERES_CONSOLIDADO", sqlalchemy.Integer()),
+    sqlalchemy.Column("MONTO_CONSOLIDADO", sqlalchemy.Integer()),
+    sqlalchemy.Column("MONTO_DESEMBOLSADO", sqlalchemy.Integer()),
+    sqlalchemy.Column("MONTO_LIQUIDO", sqlalchemy.Integer()),
+    sqlalchemy.Column("VALOR_PAGARE", sqlalchemy.Integer()),
+    
+)
