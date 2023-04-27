@@ -18,7 +18,7 @@ def obtener_cantidad_operaciones(franquicia=None):
 
 def obtener_suma_monto_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
-    query ="select rtrim(c.SUCURSAL) as SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"'GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    query ="select rtrim(c.SUCURSAL) as SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%' GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     datos = conn.execute(text(query))
     results = [dict([(r) for r in datos.fetchall()])]
     return results
