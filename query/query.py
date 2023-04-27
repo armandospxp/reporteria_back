@@ -1,20 +1,24 @@
 # from sqlalchemy.orm import Session
 from database.database import engine
+from sqlalchemy import text
+from sqlalchemy.ext.serializer import loads, dumps
 import json
+import pdb
 
 conn = engine.connect()
 
-def obtener_cantidad_operaciones(franquicia:None)->json:
+def obtener_cantidad_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
     query = "select c.SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
-    datos = conn.execute(query)
+    datos = conn.execute(text(query))
+    pdb.set_trace()
     return json.dumps(datos.fetchall())
 
-def obtener_suma_monto_operaciones(franquicia:None)->json:
+def obtener_suma_monto_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
     query ="select c.SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"'GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
-    datos = conn.execute(query)
-    return json.dumps(datos.fetchall())
+    datos = conn.execute(text(query))
+    return datos.fetchall()
 
 
 
