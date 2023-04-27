@@ -2,23 +2,26 @@
 from database.database import engine
 from sqlalchemy import text
 from sqlalchemy.ext.serializer import loads, dumps
-import json
+from fastapi.encoders import jsonable_encoder
 import pdb
 
 conn = engine.connect()
 
 def obtener_cantidad_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
-    query = "select c.SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+    query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
     datos = conn.execute(text(query))
-    pdb.set_trace()
-    return json.dumps(datos.fetchall())
+    # pdb.set_trace()
+    #results = [dic(row) for row in datos]
+    results = [dict([(r) for r in datos.fetchall()])]
+    return results
 
 def obtener_suma_monto_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
-    query ="select c.SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"'GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    query ="select rtrim(c.SUCURSAL) as SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"'GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     datos = conn.execute(text(query))
-    return datos.fetchall()
+    results = [dict([(r) for r in datos.fetchall()])]
+    return results
 
 
 
