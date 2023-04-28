@@ -11,18 +11,34 @@ def obtener_cantidad_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
     query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
     datos = conn.execute(text(query))
-    # pdb.set_trace()
+    #pdb.set_trace()
     #results = [dic(row) for row in datos]
-    results = [dict([(r) for r in datos.fetchall()])]
+    results = []
+    for i in datos.fetchall():
+        results.append({"name": i[0], "value":i[1]})
+
+    #results = [dict([(r) for r in datos.fetchall()])]
     return results
 
 def obtener_suma_monto_operaciones(franquicia=None):
     franquicia = "BOSAMAZ"
-    query ="select rtrim(c.SUCURSAL) as SUCURSAL, sum(c.MONTO_CONSOLIDADO) as MONTO_CONSOLIDADO from operaciones.colocacion c where c.FRANQUICIA like '%"+ franquicia +"%' GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     datos = conn.execute(text(query))
-    results = [dict([(r) for r in datos.fetchall()])]
+    results = []
+    for i in datos.fetchall():
+        results.append({"name":i[0], "series":[{
+            "name":"febrero",
+            "value":i[3] 
+        },{
+            "name":"marzo",
+            "value":i[2]
+        },
+        {
+            "name":"abril",
+            "value":i[1]
+        }]})
+        
     return results
-
 
 
 
