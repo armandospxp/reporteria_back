@@ -65,6 +65,15 @@ def obtener_comparativo_desembolso(alt_franquicia=None):
 
     return results
 
+def obtener_sucursales_franquicia(alt_franquicia=None):
+    query = "select distinct rtrim(c.SUCURSAL) as SUCURSAL from operaciones.colocacion c where c.FRANQUICIA like '%"+franquicia+"%'"
+    datos = conn.execute(text(query))
+    results = []
+    for i in datos.fetchall():
+        results.append({"name":i[0]})
+    
+    return results
+    
 
 
 
