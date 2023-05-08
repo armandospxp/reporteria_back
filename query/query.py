@@ -70,7 +70,7 @@ def obtener_sucursales_franquicia(alt_franquicia=None):
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
-        results.append({"name":i[0]})
+        results.append({"name":i[0], "seleccionado":True})
     
     return results
     
