@@ -1,13 +1,14 @@
-from fastapi import APIRouter
+from typing import Annotated
+from fastapi import APIRouter, Body
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso, obtener_sucursales_franquicia
 
 
 api_route = APIRouter()
 
 
-@api_route.get("/cantidad-operaciones", status_code=200)
-async def obtener_cantidad_operaciones_ruta():
-    return obtener_cantidad_operaciones()
+@api_route.post("/cantidad-operaciones", status_code=200)
+async def obtener_cantidad_operaciones_ruta(fechas1:str=None, alt_franquicia:str=None, fechas: Annotated[str | None, Body()] = None):
+    return obtener_cantidad_operaciones(alt_franquicia, fechas)
 
 @api_route.get("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones():

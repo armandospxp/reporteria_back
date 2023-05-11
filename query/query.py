@@ -11,18 +11,21 @@ global franquicia
 
 franquicia = "BOSAMAZ"
 
-def obtener_cantidad_operaciones(alt_franquicia=None):
-    query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
-        +"where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
-    datos = conn.execute(text(query))
-    #pdb.set_trace()
-    #results = [dic(row) for row in datos]
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": i[0], "value":i[1]})
+def obtener_cantidad_operaciones(alt_franquicia=None, fechas=None):
+    if fechas:
+        return fechas
+    else:
+        query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
+            +"where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        datos = conn.execute(text(query))
+        #pdb.set_trace()
+        #results = [dic(row) for row in datos]
+        results = []
+        for i in datos.fetchall():
+            results.append({"name": i[0], "value":i[1]})
 
-    #results = [dict([(r) for r in datos.fetchall()])]
-    return results
+        #results = [dict([(r) for r in datos.fetchall()])]
+        return results
 
 def obtener_suma_monto_operaciones(alt_franquicia=None):
     query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
