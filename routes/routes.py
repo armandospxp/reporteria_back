@@ -10,6 +10,10 @@ api_route = APIRouter()
 async def obtener_cantidad_operaciones_ruta(fechas1:str=None, alt_franquicia:str=None, fechas: Annotated[str | None, Body()] = None):
     return obtener_cantidad_operaciones(alt_franquicia, fechas)
 
+@api_route.get("/cantidad-operaciones", status_code=200)
+async def obtener_cantidad_operaciones_ruta(fechas1:str=None, alt_franquicia:str=None, fechas: Annotated[str | None, Body()] = None):
+    return obtener_cantidad_operaciones(alt_franquicia, fechas)
+
 @api_route.get("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones():
     return obtener_suma_monto_operaciones()
