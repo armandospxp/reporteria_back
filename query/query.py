@@ -11,27 +11,34 @@ global franquicia
 
 franquicia = "BOSAMAZ"
 
-def obtener_cantidad_operaciones(alt_franquicia=None, fechas=None):
+def obtener_cantidad_operaciones(fechas=None):
     if fechas:
-        return fechas
+        fecha_desde = fechas['fechaDesde']
+        fecha_hasta = fechas['fechaHasta']
+        query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
+            +"where c.FRANQUICIA like '%"+ franquicia +"%' AND C.FECHAOPE BETWEEN '"+fecha_desde+"' and '"+fecha_hasta+"' GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        datos = conn.execute(text(query))
+        results = []
+        for i in datos.fetchall():
+            results.append({"name": i[0], "value":i[1]})
+        return results
     else:
         query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
             +"where c.FRANQUICIA like '%"+ franquicia +"%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
         datos = conn.execute(text(query))
-        #pdb.set_trace()
-        #results = [dic(row) for row in datos]
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value":i[1]})
-
-        #results = [dict([(r) for r in datos.fetchall()])]
         return results
 
-def obtener_suma_monto_operaciones(alt_franquicia=None):
-    query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
-        "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
-            "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
-                "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+def obtener_suma_monto_operaciones(fechas=None):
+    if fechas:
+        fecha_desde = fechas['fechaDesde']
+        fecha_hasta = fechas['fechaHasta']
+        query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
+            "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
+                "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
+                    "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
@@ -49,7 +56,7 @@ def obtener_suma_monto_operaciones(alt_franquicia=None):
         
     return results
 
-def obtener_comparativo_desembolso(alt_franquicia=None):
+def obtener_comparativo_desembolso():
     query = "SELECT rtrim(c.SUCURSAL) as SUCRUSAL, sum(CASE WHEN YEAR(c.FECHAOPE) = YEAR(CURRENT_DATE()) AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
         "AS operaciones_anio_actual, sum(CASE WHEN YEAR(c.FECHAOPE) = YEAR(CURRENT_DATE()) - 1 AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
              "AS operaciones_anio_pasado FROM operaciones.colocacion c WHERE YEAR(c.FECHAOPE) IN (YEAR(CURRENT_DATE()), YEAR(CURRENT_DATE()) - 1) "\
