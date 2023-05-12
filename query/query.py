@@ -16,7 +16,7 @@ def obtener_cantidad_operaciones(fechas=None):
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
         query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
-            +"where c.FRANQUICIA like '%"+ franquicia +"%' AND C.FECHAOPE BETWEEN '"+fecha_desde+"' and '"+fecha_hasta+"' GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+            +"where c.FRANQUICIA like '%"+ franquicia +"%' AND C.FECHAOPE BETWEEN "+fecha_desde+" and "+fecha_hasta+" GROUP BY c.SUCURSAL order by CANTIDAD desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
@@ -32,27 +32,49 @@ def obtener_cantidad_operaciones(fechas=None):
         return results
 
 def obtener_suma_monto_operaciones(fechas=None):
-    if fechas:
-        fecha_desde = fechas['fechaDesde']
-        fecha_hasta = fechas['fechaHasta']
-        query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
-            "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
-                "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
-                    "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    band = 0
+    # if fechas:
+    #     fecha_desde = fechas['fechaDesde']
+    #     fecha_hasta = fechas['fechaHasta']
+    #     query = "SELECT c.SUCURSAL, rtrim(c.sucursal), SUM(CASE WHEN c.FECHAOPE = date("+fecha_desde+") THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha1, SUM(CASE WHEN c.FECHAOPE = date("+fecha_hasta+")"\
+    #          "THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha2 from colocacion c WHERE c.FECHAOPE  IN (date("+fecha_desde+"), date("+fecha_hasta+")) and c.FRANQUICIA like '%BOSAMAZ%' group by c.SUCURSAL;"
+    #     #pdb.set_trace()
+    #     band = 1
+
+    # else:
+    #     query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
+    #             "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
+    #                 "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
+    #                     "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
+                "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
+                    "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
+                        "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     datos = conn.execute(text(query))
     results = []
-    for i in datos.fetchall():
-        results.append({"name":i[0], "series":[{
-            "name":"febrero",
-            "value":i[3] 
-        },{
-            "name":"marzo",
-            "value":i[2]
-        },
-        {
-            "name":"abril",
-            "value":i[1]
-        }]})
+    if (band==0):
+        for i in datos.fetchall():
+            results.append({"name":i[0], "series":[{
+                "name":"febrero",
+                "value":i[3] 
+            },{
+                "name":"marzo",
+                "value":i[2]
+            },
+            {
+                "name":"abril",
+                "value":i[1]
+            }]})
+    else:
+        for i in datos.fetchall():
+            results.append({"name":i[0], "series":[{
+                "name":fecha_desde,
+                "value":i[1] 
+            },{
+                "name":fecha_hasta,
+                "value":i[2]
+            }]})
+        print(results)
         
     return results
 
@@ -118,3 +140,11 @@ def obtener_sucursales_franquicia(alt_franquicia=None):
 #     db.commit()
 #     db.refresh(db_item)
 #     return db_item
+
+# SELECT 
+#   SUM(CASE WHEN c.FECHAOPE = date('2021-01-01') THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha1,
+#   SUM(CASE WHEN c.FECHAOPE = date('2021-01-02') THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha2
+# from colocacion c 
+# WHERE c.FECHAOPE  IN (date('2021-01-01'), date('2021-01-02')) and c.FRANQUICIA like '%BOSAMAZ%';
+
+# select DATE('2021-01-01')

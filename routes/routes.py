@@ -8,11 +8,11 @@ api_route = APIRouter()
 
 @api_route.post("/cantidad-operaciones", status_code=200)
 async def obtener_cantidad_operaciones_ruta(fechas: Annotated[dict | None, Body()] = None):
-    return obtener_cantidad_operaciones(alt_franquicia, fechas)
+    return obtener_cantidad_operaciones(fechas)
 
 @api_route.get("/cantidad-operaciones", status_code=200)
 async def obtener_cantidad_operaciones_ruta():
-    return obtener_cantidad_operaciones(alt_franquicia, fechas)
+    return obtener_cantidad_operaciones()
 
 @api_route.get("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones():
@@ -20,7 +20,7 @@ async def obtener_suma_operaciones():
 
 @api_route.post("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None):
-    return obtener_suma_monto_operaciones()
+    return obtener_suma_monto_operaciones(fechas)
 
 @api_route.get("/comparativo-suma-operaciones", status_code=200)
 async def obtener_suma_comparativo_desembolso():
