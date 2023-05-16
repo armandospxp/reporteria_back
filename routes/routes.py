@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Body
-from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso, obtener_sucursales_franquicia
+from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso, obtener_sucursales_franquicia, suma_monto_operaciones_sucursales
 
 
 api_route = APIRouter()
@@ -28,12 +28,12 @@ async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None
 
 @api_route.get("/suma-operaciones-sucursal", status_code=200)
 async def obtener_suma_operaciones():
-    return obtener_suma_monto_operaciones()
+    return suma_monto_operaciones_sucursales()
 
 
 @api_route.post("/suma-operaciones-sucursal", status_code=200)
 async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None):
-    return obtener_suma_monto_operaciones(fechas)
+    return suma_monto_operaciones_sucursales(fechas)
 
 
 @api_route.get("/comparativo-suma-operaciones", status_code=200)
