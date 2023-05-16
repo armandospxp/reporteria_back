@@ -96,7 +96,7 @@ def suma_monto_operaciones_sucursales(fechas=None):
             results.append({"name": i[0], "value": i[1]})
         return results
     else:
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
+        query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(c.MONTO_DESEMBOLSADO) as CANTIDAD from operaciones.colocacion c "\
             + "where c.FRANQUICIA like '%" + franquicia + \
                 "%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
         datos = conn.execute(text(query))
