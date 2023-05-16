@@ -16,7 +16,8 @@ def obtener_cantidad_operaciones(fechas=None):
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
         query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
-            +"where c.FRANQUICIA like '%"+ franquicia +"%' AND C.FECHAOPE BETWEEN "+fecha_desde+" and "+fecha_hasta+" GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+            +"where c.FRANQUICIA like '%"+ franquicia +"%' AND C.FECHAOPE BETWEEN date('"+fecha_desde+"') and date('"+fecha_hasta+"') GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        print(query)
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
