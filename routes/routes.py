@@ -10,25 +10,41 @@ api_route = APIRouter()
 async def obtener_cantidad_operaciones_ruta(fechas: Annotated[dict | None, Body()] = None):
     return obtener_cantidad_operaciones(fechas)
 
+
 @api_route.get("/cantidad-operaciones", status_code=200)
 async def obtener_cantidad_operaciones_ruta():
     return obtener_cantidad_operaciones()
+
 
 @api_route.get("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones():
     return obtener_suma_monto_operaciones()
 
+
 @api_route.post("/suma-operaciones", status_code=200)
 async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None):
     return obtener_suma_monto_operaciones(fechas)
+
+
+@api_route.get("/suma-operaciones-sucursal", status_code=200)
+async def obtener_suma_operaciones():
+    return obtener_suma_monto_operaciones()
+
+
+@api_route.post("/suma-operaciones-sucursal", status_code=200)
+async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None):
+    return obtener_suma_monto_operaciones(fechas)
+
 
 @api_route.get("/comparativo-suma-operaciones", status_code=200)
 async def obtener_suma_comparativo_desembolso():
     return obtener_comparativo_desembolso()
 
+
 @api_route.post("/comparativo-suma-operaciones", status_code=200)
 async def obtener_suma_comparativo_desembolso(fechas: Annotated[dict | None, Body()] = None):
     return obtener_comparativo_desembolso()
+
 
 @api_route.get("/obtener-sucursales", status_code=200)
 async def obtener_sucursales():
