@@ -89,7 +89,9 @@ def suma_monto_operaciones_sucursales(fechas=None):
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(c.MONTO_DESEMBOLSADO) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%BOSAMAZ%'  AND C.FECHAOPE BETWEEN date('"+fecha_desde+"')"
+        query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(c.MONTO_DESEMBOLSADO) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%BOSAMAZ%'  AND C.FECHAOPE BETWEEN date('"+fecha_desde+"')"\
+            "and date('"+fecha_hasta + \
+            "') GROUP BY c.SUCURSAL order by CANTIDAD desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
