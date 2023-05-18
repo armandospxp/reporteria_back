@@ -141,6 +141,26 @@ def obtener_sucursales_franquicia(alt_franquicia=None):
     return results
 
 
+def obtener_versus_mes(alt_franquicia=None):
+    query = "SELECT DAY(c.fechaope) AS dia, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
+        "AS ventas_actual, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS ventas_anterior "\
+            "FROM operaciones.colocacion c WHERE MONTH(c.FECHAOPE) = MONTH(date('2022-05-01')) AND DAYOFWEEK(c.FECHAOPE) BETWEEN 2 AND 6 and c.FRANQUICIA like '%BOSAMAZ%' "\
+                "GROUP BY DAY(c.FECHAOPE) ORDER BY DAY(c.FECHAOPE);"
+
+    print(query)
+    datos = conn.execute(text(query))
+    results = []
+    results.append({"name": "mes_actual", "series": []})
+    results.append({"name": "mes_anterior", "series":[]})
+    for i in datos.fetchall():
+        results[0]["series"].append({"name":i[0], "value":i[1]})
+        results[1]["series"].append({"name":i[0], "value":i[2]})
+    return results
+
+            
+
+
+
 # def get_user(db: Session, user_id: int):
 #     return db.query(models.User).filter(models.User.id == user_id).first()
 
