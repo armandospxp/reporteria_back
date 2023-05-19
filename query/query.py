@@ -145,20 +145,30 @@ def obtener_versus_mes(alt_franquicia=None):
     query = "SELECT DAY(c.fechaope) AS dia, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
         "AS ventas_actual, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS ventas_anterior "\
             "FROM operaciones.colocacion c WHERE MONTH(c.FECHAOPE) = MONTH(date('2022-05-01')) AND DAYOFWEEK(c.FECHAOPE) BETWEEN 2 AND 6 and c.FRANQUICIA like '%BOSAMAZ%' "\
-                "GROUP BY DAY(c.FECHAOPE) ORDER BY DAY(c.FECHAOPE);"
+        "GROUP BY DAY(c.FECHAOPE) ORDER BY DAY(c.FECHAOPE);"
 
     print(query)
     datos = conn.execute(text(query))
     results = []
     results.append({"name": "mes_actual", "series": []})
-    results.append({"name": "mes_anterior", "series":[]})
+    results.append({"name": "mes_anterior", "series": []})
     for i in datos.fetchall():
-        results[0]["series"].append({"name":i[0], "value":i[1]})
-        results[1]["series"].append({"name":i[0], "value":i[2]})
+        results[0]["series"].append({"name": i[0], "value": i[1]})
+        results[1]["series"].append({"name": i[0], "value": i[2]})
     return results
 
-            
 
+def obtener_metas_franquicia():
+    query = "select m.franquicia, m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now())-2 and m.franquicia like '%BOSAMAZ%'"
+    query2 = "select c.FRANQUICIA, sum(c.MONTO_DESEMBOLSADO) from colocacion c where month(c.FECHAOPE) = month(now()) and year(c.FECHAOPE) = year(now())-2 and c.FRANQUICIA like '%BOSAMAZ%' group by c.FRANQUICIA;"
+    datos = conn.execute(text(query))
+    datos2 = conn.execute(text(query2))
+    results = []
+    for i in datos.fetchall():
+        results.append({"name": "meta", "value": i[1]})
+    for j in datos2.fetchall():
+        results.append({"name":"actual", "value":j[1]})
+    return results
 
 
 # def get_user(db: Session, user_id: int):
