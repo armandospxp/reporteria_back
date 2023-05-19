@@ -40,7 +40,9 @@ def authenticate_user(username: str, password: str):
     log = login_usuario(username, password)
     if (log == True):
         datos_usuario = obtener_datos_usuario(username)
-        return datos_usuario
+        generate_token(datos_usuario)
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos", headers={"WWW-Authenticate": "Bearer"})
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -53,36 +55,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def generate_token(username, password):
-    user = authenticate_user(username, password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email/username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+def generate_token(datos_usuario:dict):
+    # if not user:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Incorrect email/username or password",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    return create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-
-    user = get_user(username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
+    token = create_access_token(create_access_token(
+        data={"sub": datos_usuario['usuario']}, expires_delta=access_token_expires
+    ))
+    data = {"token": token, "username":datos_usuario['usuario'], "franquicia":datos_usuario['franquicia']}
+    return data
