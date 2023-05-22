@@ -1,7 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Body
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso,\
-     obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia
+     obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia, \
+        obtener_suma_monto_desembolsado
 from auth.auth import authenticate_user
 
 
@@ -59,6 +60,11 @@ async def obtener_versus():
 @api_route.get("/obtener-metas-franquicias", status_code=200)
 async def obtener_metas():
     return obtener_metas_franquicia()
+
+
+@api_route.get("/obtener-monto-sucursales-actual", status_code=200)
+async def obtener_monto_sucursales():
+    return obtener_suma_monto_desembolsado()
 
 @api_route.post("/login")
 async def login(user: Annotated[str | None, Body()] = None, password: Annotated[str | None, Body()] = None):

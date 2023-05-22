@@ -1,18 +1,26 @@
 # from sqlalchemy.orm import Session
-from database.database import engine
-from sqlalchemy import text
+from database.database import engine, db2_engine
+from sqlalchemy import text, create_engine
 from sqlalchemy.ext.serializer import loads, dumps
 from fastapi.encoders import jsonable_encoder
 import pdb
 
-conn = engine.connect()
+# conn = engine.connect()
+# db2_conn = db2_engine.connect()
 
 global franquicia
 
 franquicia = "BOSAMAZ"
 
+def conectar_base(engine:create_engine):
+    try:
+        return engine.connect()
+    except:
+        print("Error al conectar a la base de datos")
+  
 
 def obtener_cantidad_operaciones(fechas=None):
+    conn = conectar_base(engine)
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
@@ -25,6 +33,8 @@ def obtener_cantidad_operaciones(fechas=None):
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value": i[1]})
+        datos.close()
+        desconectar_base(engine)
         return results
     else:
         query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
@@ -34,6 +44,8 @@ def obtener_cantidad_operaciones(fechas=None):
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value": i[1]})
+        datos.close()
+        conn.close()
         return results
 
 
@@ -167,7 +179,21 @@ def obtener_metas_franquicia():
     for i in datos.fetchall():
         results.append({"name": "meta", "value": i[1]})
     for j in datos2.fetchall():
-        results.append({"name":"actual", "value":j[1]})
+        results.append({"name": "actual", "value": j[1]})
+    return results
+
+
+def obtener_suma_monto_desembolsado():
+    conn = conectar_base(db2_engine)
+    query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+        "WHERE v.VECANHO = 2023 AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
+        "GROUP BY s.FRGERSUC ORDER BY monto desc;"
+    datos = conn.execute(text(query))
+    results = []
+    for i in datos.fetchall():
+        results.append({"name": i[0], "value": i[1]})
+    datos.close()
+    conn.close()
     return results
 
 
