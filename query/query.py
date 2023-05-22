@@ -12,22 +12,23 @@ global franquicia
 
 franquicia = "BOSAMAZ"
 
-def conectar_base(engine:create_engine):
+
+def conectar_base(engine: create_engine):
     try:
         return engine.connect()
     except:
         print("Error al conectar a la base de datos")
-  
+
 
 def obtener_cantidad_operaciones(fechas=None):
-    conn = conectar_base(engine)
+    conn = conectar_base(db2_engine)
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
-            + "where c.FRANQUICIA like '%" + franquicia + \
-                "%' AND C.FECHAOPE BETWEEN date('"+fecha_desde+"') and date('" + \
-            fecha_hasta+"') GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        query = "SELECT rtrim(s.FRGERSUC) AS SUCURSAL, count(*) AS CANTIDAD FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+            "WHERE v.VECANHO BETWEEN YEAR(date('"+fecha_desde+"')) AND YEAR(date('"+fecha_hasta+"')) AND v.vecmes BETWEEN MONTH(date('"+fecha_desde+"')) "\
+            "AND MONTH(date('"+fecha_hasta+"')) AND v.VECFRNOM LIKE '%"+franquicia + \
+                "%' GROUP BY s.FRGERSUC ORDER BY cantidad desc;"
         print(query)
         datos = conn.execute(text(query))
         results = []
@@ -37,9 +38,9 @@ def obtener_cantidad_operaciones(fechas=None):
         desconectar_base(engine)
         return results
     else:
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, COUNT(*) as CANTIDAD from operaciones.colocacion c "\
-            + "where c.FRANQUICIA like '%" + franquicia + \
-                "%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        query = "SELECT rtrim(s.FRGERSUC) AS SUCURSAL, count(*) AS CANTIDAD FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+            "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia + \
+                "%' GROUP BY s.FRGERSUC ORDER BY cantidad desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
@@ -50,20 +51,6 @@ def obtener_cantidad_operaciones(fechas=None):
 
 
 def obtener_suma_monto_operaciones(fechas=None):
-    band = 0
-    # if fechas:
-    #     fecha_desde = fechas['fechaDesde']
-    #     fecha_hasta = fechas['fechaHasta']
-    #     query = "SELECT c.SUCURSAL, rtrim(c.sucursal), SUM(CASE WHEN c.FECHAOPE = date("+fecha_desde+") THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha1, SUM(CASE WHEN c.FECHAOPE = date("+fecha_hasta+")"\
-    #          "THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS monto_fecha2 from colocacion c WHERE c.FECHAOPE  IN (date("+fecha_desde+"), date("+fecha_hasta+")) and c.FRANQUICIA like '%BOSAMAZ%' group by c.SUCURSAL;"
-    #     #pdb.set_trace()
-    #     band = 1
-
-    # else:
-    #     query ="select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
-    #             "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
-    #                 "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
-    #                     "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
     query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
         "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
         "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
@@ -98,28 +85,32 @@ def obtener_suma_monto_operaciones(fechas=None):
 
 
 def suma_monto_operaciones_sucursales(fechas=None):
+    conn = conectar_base(db2_engine)
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(c.MONTO_DESEMBOLSADO) as CANTIDAD from operaciones.colocacion c where c.FRANQUICIA like '%BOSAMAZ%'  AND C.FECHAOPE BETWEEN date('"+fecha_desde+"')"\
-            "and date('"+fecha_hasta + \
-            "') GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+            "WHERE v.VECANHO BETWEEN YEAR(date('"+fecha_desde+"')) AND YEAR(date('"+fecha_hasta+"')) AND v.vecmes BETWEEN MONTH(date('"+fecha_desde+"')) "\
+            "AND MONTH(date('"+fecha_hasta+"')) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
+            "GROUP BY s.FRGERSUC ORDER BY monto desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value": i[1]})
+        datos.close()
+        conn.close()
         return results
     else:
-        query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(c.MONTO_DESEMBOLSADO) as CANTIDAD from operaciones.colocacion c "\
-            + "where c.FRANQUICIA like '%" + franquicia + \
-                "%'GROUP BY c.SUCURSAL order by CANTIDAD desc;"
+        query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+            "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
+            "GROUP BY s.FRGERSUC ORDER BY monto desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value": i[1]})
+        datos.close()
+        conn.close()
         return results
-        " and date('"+fecha_hasta + \
-            "') GROUP BY c.SUCURSAL order by CANTIDAD desc;"
 
 
 def obtener_comparativo_desembolso():
@@ -144,12 +135,15 @@ def obtener_comparativo_desembolso():
 
 
 def obtener_sucursales_franquicia(alt_franquicia=None):
-    query = "select distinct rtrim(c.SUCURSAL) as SUCURSAL from operaciones.colocacion c where c.FRANQUICIA like '%"+franquicia+"%'"
+    conn = conectar_base(db2_engine)
+    query = "SELECT DISTINCT(rtrim(s.FRGERSUC)) AS SUCURSAL FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
+        "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%';"
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
         results.append({"name": i[0], "seleccionado": True})
-
+    datos.close()
+    conn.close()
     return results
 
 
@@ -171,22 +165,29 @@ def obtener_versus_mes(alt_franquicia=None):
 
 
 def obtener_metas_franquicia():
-    query = "select m.franquicia, m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now())-2 and m.franquicia like '%BOSAMAZ%'"
-    query2 = "select c.FRANQUICIA, sum(c.MONTO_DESEMBOLSADO) from colocacion c where month(c.FECHAOPE) = month(now()) and year(c.FECHAOPE) = year(now())-2 and c.FRANQUICIA like '%BOSAMAZ%' group by c.FRANQUICIA;"
+    conn = conectar_base(engine)
+    conn2 = conectar_base(db2_engine)
+    query = "select m.franquicia, m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"
+    query2 = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
+        "WHERE s.FRGERSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now())"
     datos = conn.execute(text(query))
-    datos2 = conn.execute(text(query2))
+    datos2 = conn2.execute(text(query2))
     results = []
     for i in datos.fetchall():
         results.append({"name": "meta", "value": i[1]})
     for j in datos2.fetchall():
-        results.append({"name": "actual", "value": j[1]})
+        results.append({"name": "actual", "value": j[0]})
+    datos.close()
+    datos2.close()
+    conn.close()
+    conn2.close()
     return results
 
 
 def obtener_suma_monto_desembolsado():
     conn = conectar_base(db2_engine)
     query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-        "WHERE v.VECANHO = 2023 AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
+        "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
         "GROUP BY s.FRGERSUC ORDER BY monto desc;"
     datos = conn.execute(text(query))
     results = []
