@@ -184,20 +184,6 @@ def obtener_metas_franquicia():
     return results
 
 
-def obtener_suma_monto_desembolsado():
-    conn = conectar_base(db2_engine)
-    query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-        "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
-        "GROUP BY s.FRGERSUC ORDER BY monto desc;"
-    datos = conn.execute(text(query))
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": i[0], "value": i[1]})
-    datos.close()
-    conn.close()
-    return results
-
-
 # def get_user(db: Session, user_id: int):
 #     return db.query(models.User).filter(models.User.id == user_id).first()
 
