@@ -1,7 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Body
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso,\
-    obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia
+    obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia, \
+        obtener_situacion_venta_actual
 
 from auth.auth import authenticate_user
 
@@ -62,6 +63,10 @@ async def obtener_versus():
 @api_route.get("/obtener-metas-franquicias", status_code=200)
 async def obtener_metas():
     return obtener_metas_franquicia()
+
+@api_route.get("/obtener-situacion-franquicias", status_code=200)
+async def obtener_situacion():
+    return obtener_situacion_venta_actual()
 
 
 @api_route.post("/login")

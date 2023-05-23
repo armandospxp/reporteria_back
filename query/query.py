@@ -146,7 +146,8 @@ def obtener_comparativo_desembolso():
 
 def obtener_sucursales_franquicia(alt_franquicia=None):
     conn = conectar_base(db2_engine)
-    query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '"+franquicia+"%';"
+    query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '" + \
+        franquicia+"%';"
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
@@ -181,21 +182,26 @@ def obtener_versus_mes(alt_franquicia=None):
 
 def obtener_metas_franquicia():
     conn = conectar_base(engine)
-    conn2 = conectar_base(db2_engine)
-    query = "select m.franquicia, m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"
-    query2 = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
-        "WHERE s.FRDIRSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10)"
+    query = "select m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"
     datos = conn.execute(text(query))
-    datos2 = conn2.execute(text(query2))
     results = []
     for i in datos.fetchall():
-        results.append({"name": "meta", "value": i[1]})
-    for j in datos2.fetchall():
-        results.append({"name": "actual", "value": j[0]})
+        results.append({"name": "meta", "value": i[0]})
     datos.close()
-    datos2.close()
     conn.close()
-    conn2.close()
+    return results
+
+
+def obtener_situacion_venta_actual():
+    conn = conectar_base(db2_engine)
+    query = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
+        "WHERE s.FRDIRSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10)"
+    datos = conn.execute(text(query))
+    results = []
+    for i in datos.fetchall():
+        results.append({"name": "actual", "value": i[0]})
+    datos.close()
+    conn.close()
     return results
 
 
