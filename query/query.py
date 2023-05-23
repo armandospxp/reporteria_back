@@ -1,4 +1,5 @@
 # from sqlalchemy.orm import Session
+import datetime
 from database.database import engine, db2_engine
 from sqlalchemy import text, create_engine
 from sqlalchemy.ext.serializer import loads, dumps
@@ -51,23 +52,29 @@ def obtener_cantidad_operaciones(fechas=None):
 
 
 def obtener_suma_monto_operaciones(fechas=None):
-    query = "select rtrim(c.SUCURSAL) as SUCURSAL, SUM(CASE WHEN MONTH(c.FECHAOPE) = MONTH(CURDATE()) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_actual', "\
-        "SUM(CASE WHEN month (c.FECHAOPE) = month(CURDATE()) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_pasado', "\
-        "SUM(CASE WHEN month(c.FECHAOPE) = MONTH(CURDATE()) - 2 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS 'mes_antepasado' from operaciones.colocacion c "\
-        "where c.FRANQUICIA like '%BOSAMAZ%' and c.FECHAOPE <= DATE_SUB(CURDATE(), INTERVAL 2 month) GROUP BY c.SUCURSAL order by MONTO_CONSOLIDADO desc;"
+    band = 0
+    conn = conectar_base(db2_engine)
+    query = "SELECT l.FRGERSUC, "\
+        "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE - 2 MONTHS) THEN f.BFSOLI ELSE 0 END) AS MES1, "\
+        "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE - 1 MONTHS) THEN f.BFSOLI ELSE 0 END) AS MES2, "\
+        "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE) THEN f.BFSOLI ELSE 0 END) AS MES3 " \
+        "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+        "WHERE f.BFFCHV >= CURRENT DATE - 3 MONTHS and f.BFOPER not in (405,410) and "\
+            "f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+            "GROUP BY l.FRGERSUC;"
     datos = conn.execute(text(query))
     results = []
     if (band == 0):
         for i in datos.fetchall():
             results.append({"name": i[0], "series": [{
-                "name": "febrero",
+                "name": "marzo",
                 "value": i[3]
             }, {
-                "name": "marzo",
+                "name": "abril",
                 "value": i[2]
             },
                 {
-                "name": "abril",
+                "name": "mayo",
                 "value": i[1]
             }]})
     else:
@@ -79,8 +86,8 @@ def obtener_suma_monto_operaciones(fechas=None):
                 "name": fecha_hasta,
                 "value": i[2]
             }]})
-        print(results)
-
+    datos.close()
+    conn.close()
     return results
 
 
@@ -148,19 +155,25 @@ def obtener_sucursales_franquicia(alt_franquicia=None):
 
 
 def obtener_versus_mes(alt_franquicia=None):
-    query = "SELECT DAY(c.fechaope) AS dia, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
-        "AS ventas_actual, SUM(CASE WHEN YEAR(c.FECHAOPE) = YEAR(date('2022-05-01')) - 1 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) AS ventas_anterior "\
-            "FROM operaciones.colocacion c WHERE MONTH(c.FECHAOPE) = MONTH(date('2022-05-01')) AND DAYOFWEEK(c.FECHAOPE) BETWEEN 2 AND 6 and c.FRANQUICIA like '%BOSAMAZ%' "\
-        "GROUP BY DAY(c.FECHAOPE) ORDER BY DAY(c.FECHAOPE);"
-
-    print(query)
+    conn = conectar_base(db2_engine)
+    query = "SELECT EXTRACT(MONTH FROM c.BFFCHV) AS mes, "\
+        "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) THEN c.BFSOLI ELSE 0 END) AS año_actual, "\
+        "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 THEN c.BFSOLI ELSE 0 END) AS año_pasado "\
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%"+franquicia+"%' "\
+        "GROUP BY EXTRACT(MONTH FROM c.BFFCHV) ORDER BY EXTRACT(MONTH FROM c.BFFCHV);"
     datos = conn.execute(text(query))
     results = []
-    results.append({"name": "mes_actual", "series": []})
-    results.append({"name": "mes_anterior", "series": []})
+    results.append({"name": "año_actual", "series": []})
+    results.append({"name": "año_anterior", "series": []})
     for i in datos.fetchall():
-        results[0]["series"].append({"name": i[0], "value": i[1]})
+        if i[1] == 0:
+            pass
+        else:
+            results[0]["series"].append({"name": i[0], "value": i[1]})
         results[1]["series"].append({"name": i[0], "value": i[2]})
+    datos.close()
+    conn.close()
     return results
 
 
@@ -169,7 +182,7 @@ def obtener_metas_franquicia():
     conn2 = conectar_base(db2_engine)
     query = "select m.franquicia, m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"
     query2 = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
-        "WHERE s.FRGERSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now())"
+        "WHERE s.FRDIRSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10)"
     datos = conn.execute(text(query))
     datos2 = conn2.execute(text(query2))
     results = []
