@@ -26,22 +26,24 @@ def obtener_cantidad_operaciones(fechas=None):
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
-        query = "SELECT rtrim(s.FRGERSUC) AS SUCURSAL, count(*) AS CANTIDAD FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-            "WHERE v.VECANHO BETWEEN YEAR(date('"+fecha_desde+"')) AND YEAR(date('"+fecha_hasta+"')) AND v.vecmes BETWEEN MONTH(date('"+fecha_desde+"')) "\
-            "AND MONTH(date('"+fecha_hasta+"')) AND v.VECFRNOM LIKE '%"+franquicia + \
-                "%' GROUP BY s.FRGERSUC ORDER BY cantidad desc;"
+        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFFCHV BETWEEN '"+fecha_desde+"' AND '"+fecha_hasta+"' and f.BFOPER not in (405,410) and "\
+            "f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+            "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
         print(query)
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
             results.append({"name": i[0], "value": i[1]})
         datos.close()
-        desconectar_base(engine)
+        conn.close()
         return results
     else:
-        query = "SELECT rtrim(s.FRGERSUC) AS SUCURSAL, count(*) AS CANTIDAD FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-            "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia + \
-                "%' GROUP BY s.FRGERSUC ORDER BY cantidad desc;"
+        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+            "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
@@ -54,7 +56,7 @@ def obtener_cantidad_operaciones(fechas=None):
 def obtener_suma_monto_operaciones(fechas=None):
     band = 0
     conn = conectar_base(db2_engine)
-    query = "SELECT l.FRGERSUC, "\
+    query = "SELECT rtrim(l.FRGERSUC), "\
         "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE - 2 MONTHS) THEN f.BFSOLI ELSE 0 END) AS MES1, "\
         "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE - 1 MONTHS) THEN f.BFSOLI ELSE 0 END) AS MES2, "\
         "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE) THEN f.BFSOLI ELSE 0 END) AS MES3 " \
@@ -96,10 +98,10 @@ def suma_monto_operaciones_sucursales(fechas=None):
     if fechas:
         fecha_desde = fechas['fechaDesde']
         fecha_hasta = fechas['fechaHasta']
-        query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-            "WHERE v.VECANHO BETWEEN YEAR(date('"+fecha_desde+"')) AND YEAR(date('"+fecha_hasta+"')) AND v.vecmes BETWEEN MONTH(date('"+fecha_desde+"')) "\
-            "AND MONTH(date('"+fecha_hasta+"')) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
-            "GROUP BY s.FRGERSUC ORDER BY monto desc;"
+        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC WHERE f.BFFCHV between '"+fecha_desde+"' "\
+            "and '"+fecha_hasta+"' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+            "GROUP BY l.FRGERSUC ORDER BY monto desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
@@ -108,9 +110,10 @@ def suma_monto_operaciones_sucursales(fechas=None):
         conn.close()
         return results
     else:
-        query = "SELECT RTRIM(s.FRGERSUC) AS SUCURSAL, sum(v.VECDESMB) AS MONTO FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-            "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%' "\
-            "GROUP BY s.FRGERSUC ORDER BY monto desc;"
+        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE YEAR(f.BFFCHV) = year(now()) and month(f.BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+            "GROUP BY l.FRGERSUC ORDER BY monto desc;"
         datos = conn.execute(text(query))
         results = []
         for i in datos.fetchall():
@@ -143,8 +146,7 @@ def obtener_comparativo_desembolso():
 
 def obtener_sucursales_franquicia(alt_franquicia=None):
     conn = conectar_base(db2_engine)
-    query = "SELECT DISTINCT(rtrim(s.FRGERSUC)) AS SUCURSAL FROM DB2ADMIN.VEVOCARTERA v JOIN DB2ADMIN.FSTFRANLEV s ON v.VECSUCU  = s.FRSUC "\
-        "WHERE v.VECANHO = YEAR(now()) AND v.VECFRNOM LIKE '%"+franquicia+"%';"
+    query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '"+franquicia+"%';"
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
