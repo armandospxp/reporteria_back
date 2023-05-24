@@ -3,9 +3,10 @@ from fastapi import APIRouter, Body, Depends
 from fastapi.security import OAuth2PasswordBearer
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso,\
     obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia, \
-    obtener_situacion_venta_actual
+    obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo
 
-from auth.auth import authenticate_user, verificar_usuario
+from auth.auth import authenticate_user
+#verificar_usuario
 
 
 api_route = APIRouter()
@@ -71,9 +72,14 @@ async def obtener_situacion():
     return obtener_situacion_venta_actual()
 
 
-@api_route.get("/obtener-situacion-franquicias2", status_code=200)
-async def obtener_situacion(token: Annotated[str, Depends(verificar_usuario)]):
-    return obtener_situacion_venta_actual()
+@api_route.get("/obtener-variacion-banca-tipo", status_code=200)
+async def obtener_variacion(fechas: Annotated[dict | None, Body()] = None, tipo_banca: Annotated[int | None, Body()] = None, anterior: Annotated[int | None, Body()] = None):
+    return obtener_variacion_colocacion_banca_tipo(fechas, tipo_banca, anterior)
+
+
+# @api_route.get("/obtener-situacion-franquicias2", status_code=200)
+# async def obtener_situacion(token: Annotated[str, Depends(verificar_usuario)]):
+#     return obtener_situacion_venta_actual()
 
 
 @api_route.post("/login")

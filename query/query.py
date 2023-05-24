@@ -205,6 +205,53 @@ def obtener_situacion_venta_actual():
     return results
 
 
+def obtener_variacion_colocacion_banca_tipo(fechas=None, tipo_banca:int=None, anterior:int=None):
+    conn = conectar_base(db2_engine)
+    if fechas:
+        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
+            "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
+            "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
+            "SUM(CASE WHEN f.BFOPER IN (305) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
+            "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFAGEN IN ("+tipo_banca+") AND f.BFFCHV between '"+fechas['fechaDesde']+"' AND '"+fechas['fechaHasta']+" "\
+            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
+    elif anterior:
+        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
+            "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
+            "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
+            "SUM(CASE WHEN f.BFOPER IN (305) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
+            "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -"+ant+" AND month(f.BFFCHV) = month(now()) "\
+            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
+    else:
+        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
+            "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
+            "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
+            "SUM(CASE WHEN f.BFOPER IN (305) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
+            "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) AND month(f.BFFCHV) = month(now()) "\
+            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
+    datos = conn.execute(text(query))
+    results = []
+    for i in datos.fetchall():
+        if i == 0:
+            results.append({"name":"DESCUENTO CHEQUES", "value": i[0]})
+        elif i== 1:
+            results.append({"name":"NUEVOS INT", "value": i[1]})
+        elif i==2:
+            results.append({"name":"NUEVOS MET", "value": i[2]})
+        elif i==3:
+            results.append({"name":"RECURR INT", "value":i[3]})
+        else:
+            results.append({"name":"RECURR MET", "value":i[4]})
+    datos.close()
+    conn.close()
+    return results
+
+
 # def get_user(db: Session, user_id: int):
 #     return db.query(models.User).filter(models.User.id == user_id).first()
 
