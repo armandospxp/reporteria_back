@@ -73,8 +73,13 @@ async def obtener_situacion():
 
 
 @api_route.get("/obtener-variacion-banca-tipo", status_code=200)
-async def obtener_variacion(fechas: Annotated[dict | None, Body()] = None, tipo_banca: Annotated[int | None, Body()] = None, anterior: Annotated[int | None, Body()] = None):
-    return obtener_variacion_colocacion_banca_tipo(fechas, tipo_banca, anterior)
+async def obtener_variacion():
+    return obtener_variacion_colocacion_banca_tipo()
+
+
+@api_route.post("/obtener-variacion-banca-tipo", status_code=200)
+async def obtener_variacion(filtros: Annotated[dict | None, Body()] = None):
+    return obtener_variacion_colocacion_banca_tipo(filtros)
 
 
 # @api_route.get("/obtener-situacion-franquicias2", status_code=200)
