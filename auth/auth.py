@@ -40,7 +40,8 @@ def authenticate_user(username: str, password: str):
     log = login_usuario(username, password)
     if (log == True):
         datos_usuario = obtener_datos_usuario(username)
-        generate_token(datos_usuario)
+        resp = generate_token(datos_usuario)
+        return resp
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos", headers={"WWW-Authenticate": "Bearer"})
 
@@ -63,8 +64,8 @@ def generate_token(datos_usuario:dict):
     #         headers={"WWW-Authenticate": "Bearer"},
     #     )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = create_access_token(create_access_token(
+    token = create_access_token(
         data={"sub": datos_usuario['usuario']}, expires_delta=access_token_expires
-    ))
+    )
     data = {"token": token, "username":datos_usuario['usuario'], "franquicia":datos_usuario['franquicia']}
     return data

@@ -22,9 +22,9 @@ def login_usuario(username: str, password: str):
 
 
 def obtener_datos_usuario(username:str):
-    query = "select u.username as nombre_usuario, f.nombre_franquicia as franquicia from usuarios u join franquicias f where u.fk_franquicia = f.id_franquicia where u.username='"+username+"';"
+    query = "select u.username as nombre_usuario, rtrim(f.nombre_franquicia) as franquicia from usuarios u join franquicias f on u.fk_franquicia = f.id_franquicia where u.username='"+username+"';"
     dato = conn.execute(text(query))
-    result = []
+    result = {}
     for i in dato.fetchall():
-        result.append({"usuario": i[0], "franquicia": i[1]})
+        result = {"usuario": i[0], "franquicia": i[1]}
     return result
