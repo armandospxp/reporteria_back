@@ -6,8 +6,6 @@ from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaci
     obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo
 
 from auth.auth import authenticate_user
-#verificar_usuario
-
 
 api_route = APIRouter()
 
@@ -77,15 +75,6 @@ async def obtener_variacion(filtros: Annotated[dict | None, Body()] = None):
     return obtener_variacion_colocacion_banca_tipo(filtros)
 
 
-# @api_route.get("/obtener-situacion-franquicias2", status_code=200)
-# async def obtener_situacion(token: Annotated[str, Depends(verificar_usuario)]):
-#     return obtener_situacion_venta_actual()
-
-
 @api_route.post("/login")
 async def login(user: Annotated[str | None, Body()] = None, password: Annotated[str | None, Body()] = None):
     return authenticate_user(user, password)
-
-# @api_route.post("/login", response_class=User, status_code=201)
-# def login(username: User.username, password:User.password)->json:
-#     pass
