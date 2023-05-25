@@ -205,12 +205,31 @@ def obtener_situacion_venta_actual():
     return results
 
 
-def obtener_variacion_colocacion_banca_tipo(filtros:dict=None):
+def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
     conn = conectar_base(db2_engine)
     tipo_banca = str(filtros.get("tipo_banca"))
     anterior = filtros.get("anterior")
+    debito = filtros.get("debito")
     # pdb.set_trace()
-    if anterior:
+    if debito == 1:
+        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
+            "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
+            "SUM(CASE WHEN f.BFOPER IN (600) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
+            "SUM(CASE WHEN f.BFOPER IN (606) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
+            "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) AND month(f.BFFCHV) = month(now()) "\
+            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
+    elif debito == 2:
+        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
+            "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
+            "SUM(CASE WHEN f.BFOPER IN (600) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
+            "SUM(CASE WHEN f.BFOPER IN (606) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
+            "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
+            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) =  year(now()) -"+str(anterior)+" AND month(f.BFFCHV) = month(now()) "\
+            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
+    elif anterior:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
             "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
@@ -232,11 +251,11 @@ def obtener_variacion_colocacion_banca_tipo(filtros:dict=None):
     datos = conn.execute(text(query))
     results = []
     for i in datos.fetchall():
-        results.append({"name":"DESCUENTO CHEQUES", "value": i[0]})
-        results.append({"name":"NUEVOS INT", "value": i[1]})
-        results.append({"name":"NUEVOS MET", "value": i[2]})
-        results.append({"name":"RECURR INT", "value":i[3]})
-        results.append({"name":"RECURR MET", "value":i[4]})
+        results.append({"name": "DESCUENTO CHEQUES", "value": i[0]})
+        results.append({"name": "NUEVOS INT", "value": i[1]})
+        results.append({"name": "NUEVOS MET", "value": i[2]})
+        results.append({"name": "RECURR INT", "value": i[3]})
+        results.append({"name": "RECURR MET", "value": i[4]})
     datos.close()
     conn.close()
     return results
