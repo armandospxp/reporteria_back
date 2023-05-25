@@ -207,21 +207,10 @@ def obtener_situacion_venta_actual():
 
 def obtener_variacion_colocacion_banca_tipo(filtros:dict=None):
     conn = conectar_base(db2_engine)
-    fecha_desde = filtros.get("fechaDesde")
-    fecha_hasta = filtros.get("fechaHasta")
     tipo_banca = str(filtros.get("tipo_banca"))
     anterior = filtros.get("anterior")
     # pdb.set_trace()
-    if fecha_desde and fecha_hasta:
-        query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
-            "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
-            "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
-            "SUM(CASE WHEN f.BFOPER IN (305) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
-            "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
-            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-            "WHERE f.BFAGEN IN ("+tipo_banca+") AND f.BFFCHV between '"+fecha_desde+"' AND '"+fecha_hasta+" "\
-            "AND l.FRDIRSUC LIKE '"+franquicia+"%';"
-    elif anterior:
+    if anterior:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
             "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
