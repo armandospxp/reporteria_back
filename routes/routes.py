@@ -72,11 +72,6 @@ async def obtener_situacion():
     return obtener_situacion_venta_actual()
 
 
-@api_route.get("/obtener-variacion-banca-tipo", status_code=200)
-async def obtener_variacion():
-    return obtener_variacion_colocacion_banca_tipo()
-
-
 @api_route.post("/obtener-variacion-banca-tipo", status_code=200)
 async def obtener_variacion(filtros: Annotated[dict | None, Body()] = None):
     return obtener_variacion_colocacion_banca_tipo(filtros)
