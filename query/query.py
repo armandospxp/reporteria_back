@@ -63,12 +63,12 @@ class QueryConsult():
 def obtener_cantidad_operaciones(fechas=None):
     query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
         "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-        "WHERE YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "
+        " WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "
     if fechas:
-        query = query + "AND f.BFFCHV BETWEEN '"+fecha_desde+"' AND '" + \
-            fecha_hasta+"' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+        query = query + "AND f.BFFCHV BETWEEN '"+fechas['fechaDesde']+"' AND '" + \
+            fechas['fechaHasta']+"' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
     else:
-        query = query + "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+        query = query + "AND YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
     qry = QueryConsult(db2_engine, query)
     return qry.obtener_datos()
 
