@@ -36,8 +36,8 @@ async def obtener_suma_operaciones():
 
 
 @api_route.post("/suma-operaciones-sucursal", status_code=200)
-async def obtener_suma_operaciones(fechas: Annotated[dict | None, Body()] = None):
-    return suma_monto_operaciones_sucursales(fechas)
+async def obtener_suma_operaciones(**kwargs: Annotated[dict | None, Body()]):
+    return suma_monto_operaciones_sucursales(**kwargs)
 
 
 @api_route.get("/comparativo-suma-operaciones", status_code=200)

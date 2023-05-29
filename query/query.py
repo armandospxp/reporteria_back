@@ -10,43 +10,67 @@ global franquicia
 franquicia = "BOSAMAZ"
 
 
-def conectar_base(engine: create_engine):
-    try:
-        return engine.connect()
-    except:
-        print("Error al conectar a la base de datos")
+class QueryConsult():
+    def __init__(self, engine, query, nombre=None, sucursal=None, versus=None, variacion=None):
+        self.engine = engine
+        self.query = query
+        self.nombre = nombre
+        self.sucursal = sucursal
+        self.versus = versus
+        self.variacion = variacion
+
+    def conectar_base(self):
+        try:
+            return self.engine.connect()
+        except:
+            print("Error al conectar a la base de datos")
+
+    def obtener_datos(self):
+        conn = self.conectar_base()
+        datos = conn.execute(text(self.query))
+        results = []
+        if self.versus:
+            results.append({"name": "año_actual", "series": []})
+            results.append({"name": "año_anterior", "series": []})
+            for i in datos.fetchall():
+                if i[1] == 0:
+                    pass
+                else:
+                    results[0]["series"].append({"name": i[0], "value": i[1]})
+                    results[1]["series"].append({"name": i[0], "value": i[2]})
+        elif self.variacion:
+            for i in datos.fetchall():
+                results.append({"name": "DESCUENTO CHEQUES", "value": i[0]})
+                results.append({"name": "NUEVOS INT", "value": i[1]})
+                results.append({"name": "NUEVOS MET", "value": i[2]})
+                results.append({"name": "RECURR INT", "value": i[3]})
+                results.append({"name": "RECURR MET", "value": i[4]})
+        elif self.sucursal:
+            for i in datos.fetchall():
+                results.append({"name": i[0], "seleccionado": True})
+        elif self.nombre:
+            for n in self.nombre:
+                for i in datos.fetchall():
+                    results.append({"name": n, "value": i[0]})
+        else:
+            for i in datos.fetchall():
+                results.append({"name": i[0], "value": i[1]})
+        datos.close()
+        conn.close()
+        return results
 
 
 def obtener_cantidad_operaciones(fechas=None):
-    conn = conectar_base(db2_engine)
+    query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
+        "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+        "WHERE YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "
     if fechas:
-        fecha_desde = fechas['fechaDesde']
-        fecha_hasta = fechas['fechaHasta']
-        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
-            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-            "WHERE f.BFFCHV BETWEEN '"+fecha_desde+"' AND '"+fecha_hasta+"' and f.BFOPER not in (405,410) and "\
-            "f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
-            "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
-        print(query)
-        datos = conn.execute(text(query))
-        results = []
-        for i in datos.fetchall():
-            results.append({"name": i[0], "value": i[1]})
-        datos.close()
-        conn.close()
-        return results
+        query = query + "AND f.BFFCHV BETWEEN '"+fecha_desde+"' AND '" + \
+            fecha_hasta+"' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
     else:
-        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
-            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-            "WHERE YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
-            "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
-        datos = conn.execute(text(query))
-        results = []
-        for i in datos.fetchall():
-            results.append({"name": i[0], "value": i[1]})
-        datos.close()
-        conn.close()
-        return results
+        query = query + "GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+    qry = QueryConsult(db2_engine, query)
+    return qry.obtener_datos()
 
 
 def obtener_suma_monto_operaciones(fechas=None):
@@ -89,34 +113,22 @@ def obtener_suma_monto_operaciones(fechas=None):
     return results
 
 
-def suma_monto_operaciones_sucursales(fechas=None):
-    conn = conectar_base(db2_engine)
-    if fechas:
-        fecha_desde = fechas['fechaDesde']
-        fecha_hasta = fechas['fechaHasta']
-        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
-            "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC WHERE f.BFFCHV between '"+fecha_desde+"' "\
-            "and '"+fecha_hasta+"' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
-            "GROUP BY l.FRGERSUC ORDER BY monto desc;"
-        datos = conn.execute(text(query))
-        results = []
-        for i in datos.fetchall():
-            results.append({"name": i[0], "value": i[1]})
-        datos.close()
-        conn.close()
-        return results
-    else:
-        query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
+def suma_monto_operaciones_sucursales(**kwargs):
+    query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-            "WHERE YEAR(f.BFFCHV) = year(now()) and month(f.BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
-            "GROUP BY l.FRGERSUC ORDER BY monto desc;"
-        datos = conn.execute(text(query))
-        results = []
-        for i in datos.fetchall():
-            results.append({"name": i[0], "value": i[1]})
-        datos.close()
-        conn.close()
-        return results
+            "WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
+        franquicia+"%' "
+    if kwargs:
+        query = query + "AND f.BFFCHV between '" + \
+            kwargs['kwargs']['fechaDesde']+"' AND '"+kwargs['kwargs']['fechaHasta'] + \
+            "' GROUP BY l.FRGERSUC ORDER BY monto desc;"
+        qry = QueryConsult(db2_engine, query)
+        return qry.obtener_datos()
+    else:
+        query = query + \
+            "AND year(f.BFFCHV) = year(now()) and month(f.BFFCHV) = month(now()) GROUP BY l.FRGERSUC ORDER BY monto desc;"
+        qry = QueryConsult(db2_engine, query)
+        return qry.obtener_datos()
 
 
 def obtener_comparativo_desembolso():
@@ -141,72 +153,40 @@ def obtener_comparativo_desembolso():
 
 
 def obtener_sucursales_franquicia(alt_franquicia=None):
-    conn = conectar_base(db2_engine)
     query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '" + \
         franquicia+"%';"
-    datos = conn.execute(text(query))
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": i[0], "seleccionado": True})
-    datos.close()
-    conn.close()
-    return results
+    qry = QueryConsult(db2_engine, query, sucursal=True)
+    return qry.obtener_datos()
 
 
 def obtener_versus_mes(alt_franquicia=None):
-    conn = conectar_base(db2_engine)
     query = "SELECT EXTRACT(MONTH FROM c.BFFCHV) AS mes, "\
         "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) THEN c.BFSOLI ELSE 0 END) AS año_actual, "\
         "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 THEN c.BFSOLI ELSE 0 END) AS año_pasado "\
         "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
         "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%"+franquicia+"%' "\
         "GROUP BY EXTRACT(MONTH FROM c.BFFCHV) ORDER BY EXTRACT(MONTH FROM c.BFFCHV);"
-    datos = conn.execute(text(query))
-    results = []
-    results.append({"name": "año_actual", "series": []})
-    results.append({"name": "año_anterior", "series": []})
-    for i in datos.fetchall():
-        if i[1] == 0:
-            pass
-        else:
-            results[0]["series"].append({"name": i[0], "value": i[1]})
-        results[1]["series"].append({"name": i[0], "value": i[2]})
-    datos.close()
-    conn.close()
-    return results
+    qry = QueryConsult(db2_engine, query, versus=True)
+    return qry.obtener_datos()
 
 
 def obtener_metas_franquicia():
-    conn = conectar_base(engine)
     query = "select m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"
-    datos = conn.execute(text(query))
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": "meta", "value": i[0]})
-    datos.close()
-    conn.close()
-    return results
+    qry = QueryConsult(engine, query, nombre=["meta"])
+    return qry.obtener_datos()
 
 
 def obtener_situacion_venta_actual():
-    conn = conectar_base(db2_engine)
     query = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
         "WHERE s.FRDIRSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10)"
-    datos = conn.execute(text(query))
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": "actual", "value": i[0]})
-    datos.close()
-    conn.close()
-    return results
+    qry = QueryConsult(db2_engine, query, nombre=["actual"])
+    return qry.obtener_datos()
 
 
 def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
-    conn = conectar_base(db2_engine)
     tipo_banca = str(filtros.get("tipo_banca"))
     anterior = filtros.get("anterior")
     debito = filtros.get("debito")
-    # pdb.set_trace()
     if debito == 1:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -215,7 +195,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) AND month(f.BFFCHV) = month(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia+"%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRDIRSUC LIKE '"+franquicia + \
+                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     elif debito == 2:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -224,7 +205,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) =  year(now()) -"+str(anterior)+" AND month(f.BFFCHV) = month(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia+"%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRDIRSUC LIKE '"+franquicia + \
+                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     elif anterior:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -233,7 +215,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -"+str(anterior)+" AND month(f.BFFCHV) = month(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia+"%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRDIRSUC LIKE '"+franquicia + \
+                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     else:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -242,15 +225,7 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) AND month(f.BFFCHV) = month(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia+"%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
-    datos = conn.execute(text(query))
-    results = []
-    for i in datos.fetchall():
-        results.append({"name": "DESCUENTO CHEQUES", "value": i[0]})
-        results.append({"name": "NUEVOS INT", "value": i[1]})
-        results.append({"name": "NUEVOS MET", "value": i[2]})
-        results.append({"name": "RECURR INT", "value": i[3]})
-        results.append({"name": "RECURR MET", "value": i[4]})
-    datos.close()
-    conn.close()
-    return results
+            "AND l.FRDIRSUC LIKE '"+franquicia + \
+                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+    qry = QueryConsult(db2_engine, query, variacion=True)
+    return qry.obtener_datos()
