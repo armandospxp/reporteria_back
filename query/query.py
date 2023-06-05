@@ -10,7 +10,7 @@ global franquicia
 franquicia = "BOSAMAZ"
 
 
-class QueryConsult():
+class QueryConsult:
     def __init__(self, engine, query, nombre=None, sucursal=None, versus=None, variacion=None):
         self.engine = engine
         self.query = query
