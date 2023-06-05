@@ -76,33 +76,34 @@ def generate_token(datos_usuario: dict):
             "username": datos_usuario['usuario'], "franquicia": datos_usuario['franquicia']}
     return data
 
-    async def verificar_usuario(token: str = Depends(oauth2_scheme)) -> SystemUser:
-        try:
-            payload = jwt.decode(
-                token, JWT_SECRET_KEY, algorithms=[ALGORITHM]
-            )
-            pdb.set_trace()
-            token_data = TokenPayload(**payload)
 
-            if datetime.fromtimestamp(token_data.exp) < datetime.now():
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token expired",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-        except (jwt.JWTError, ValidationError):
+async def verificar_usuario(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(
+            token, JWT_SECRET_KEY, algorithms=[ALGORITHM]
+        )
+        pdb.set_trace()
+        token_data = TokenPayload(**payload)
+
+        if datetime.fromtimestamp(token_data.exp) < datetime.now():
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+    except (jwt.JWTError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-        user: Union[dict[str, Any], None] = db.get(token_data.sub, None)
+    user: Union[dict[str, Any], None] = db.get(token_data.sub, None)
 
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Could not find user",
-            )
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Could not find user",
+        )
 
-        return SystemUser(**user)
+    return SystemUser(**user)

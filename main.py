@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database.database import iniciar_base
+from middleware.auth_middleware import VerificadorToken
 from routes.routes import api_route
 import uvicorn
 
 app = FastAPI()
+app.add_middleware(VerificadorToken)
 
 origins = [
     "http://localhost",
