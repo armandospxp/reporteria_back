@@ -5,10 +5,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-
-from models.user_model import User as UserModel
-from models.token_model import TokenData
 from query.auth_query import login_usuario, obtener_datos_usuario
 from settings import Settings
 import pdb

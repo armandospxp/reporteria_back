@@ -1,11 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import jwt
+from starlette import status
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.requests import Request
+
+from auth.auth import verificar_usuario, SECRET_KEY
 from database.database import iniciar_base
 from middleware.auth_middleware import VerificadorToken
 from routes.routes import api_route
 import uvicorn
 
 app = FastAPI()
+
 app.add_middleware(VerificadorToken)
 
 origins = [

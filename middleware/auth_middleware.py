@@ -1,31 +1,37 @@
-from auth.auth import verificar_usuario, SECRET_KEY
-import jwt
-from fastapi import Request, HTTPException, status
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette import status
+from starlette.exceptions import HTTPException
+from starlette.requests import Request
+from starlette.middleware.base import RequestResponseEndpoint, BaseHTTPMiddleware
+from fastapi_users import jwt
+from fastapi.responses import JSONResponse
+
+from auth.auth import SECRET_KEY, verificar_usuario
 
 
 class VerificadorToken(BaseHTTPMiddleware):
-    def __init__(
-            self,
-            app,
-    ):
-        super().__init__(app)
-
-    async def dispatch(self, request: Request, call_next):
-        if not request.url.path.startswith("/login"):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
+        if not request.url.path.__contains__("/login"):
             try:
                 # Obtener el encabezado de autorización de la solicitud
                 authorization: str = request.headers.get("Authorization")
-                scheme, token = authorization.split()
+                if not authorization or "bearer" not in authorization.lower():
+                    return JSONResponse(status_code=401, content="Se requiere un token de autenticación")
+                    # return HTTPException(
+                    #     status_code=status.HTTP_401_UNAUTHORIZED,
+                    #     detail="Se requiere un token de autenticación",
+                    #     headers={"WWW-Authenticate": "Bearer"},
+                    # )
+                scheme, token = authorization.split(" ")
 
                 # Verificar que el esquema de autorización sea Bearer
 
                 if scheme.lower() != "bearer":
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Esquema de autorización inválido",
-                        headers={"WWW-Authenticate": "Bearer"},
-                    )
+                    # return HTTPException(
+                    #     status_code=status.HTTP_401_UNAUTHORIZED,
+                    #     detail="Esquema de autorización inválido",
+                    #     headers={"WWW-Authenticate": "Bearer"},
+                    # )
+                    return JSONResponse(status_code=401, content="Esquema de autorización inválido")
                 # Decodificar y verificar el token
                 decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
 
@@ -33,10 +39,7 @@ class VerificadorToken(BaseHTTPMiddleware):
                 verificar_usuario(token)
 
             except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, AttributeError):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token inválido o expirado",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+                return JSONResponse(status_code=401, content="Token Inválido")
+                # return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Inválido")
         response = await call_next(request)
         return response
