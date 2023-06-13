@@ -2,7 +2,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.middleware.base import RequestResponseEndpoint, BaseHTTPMiddleware
-from fastapi_users import jwt
+from jose import jwt
 from fastapi.responses import JSONResponse
 
 from auth.auth import SECRET_KEY, verificar_usuario
