@@ -63,12 +63,15 @@ class QueryConsult:
 def obtener_cantidad_operaciones(fechas=None):
     query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
         "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-        " WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "
+        " WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
+        franquicia+"%' "
     if fechas:
         query = query + "AND f.BFFCHV BETWEEN '"+fechas['fechaDesde']+"' AND '" + \
-            fechas['fechaHasta']+"' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+            fechas['fechaHasta'] + \
+            "' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
     else:
-        query = query + "AND YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+        query = query + \
+            "AND YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
     qry = QueryConsult(db2_engine, query)
     return qry.obtener_datos()
 
@@ -166,6 +169,16 @@ def obtener_versus_mes(alt_franquicia=None):
         "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
         "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%"+franquicia+"%' "\
         "GROUP BY EXTRACT(MONTH FROM c.BFFCHV) ORDER BY EXTRACT(MONTH FROM c.BFFCHV);"
+    qry = QueryConsult(db2_engine, query, versus=True)
+    return qry.obtener_datos()
+
+
+def obtener_versus_mes_dia(alt_franquicia=None):
+    query = "SELECT EXTRACT(DAY FROM c.BFFCHV) AS dia, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN c.BFSOLI ELSE 0 END) "\
+        "AS año_actual, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN c.BFSOLI ELSE 0 END) AS año_pasado "\
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%BOSAMAZ%' "\
+        "GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
     qry = QueryConsult(db2_engine, query, versus=True)
     return qry.obtener_datos()
 
