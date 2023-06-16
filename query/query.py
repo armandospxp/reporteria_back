@@ -182,6 +182,15 @@ def obtener_versus_mes_dia(alt_franquicia=None):
     qry = QueryConsult(db2_engine, query, versus=True)
     return qry.obtener_datos()
 
+def obtener_versus_mes_dia_cantidad(alt_franquicia=None):
+    query = "SELECT EXTRACT(DAY FROM c.BFFCHV) AS dia, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN 1 ELSE 0 END) "\
+        "AS año_actual, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN 1 ELSE 0 END) AS año_pasado "\
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%BOSAMAZ%' "\
+        "GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
+    qry = QueryConsult(db2_engine, query, versus=True)
+    return qry.obtener_datos()
+
 
 def obtener_metas_franquicia():
     query = "select m.meta from metas m where month(m.fecha) = month(now()) and year(m.fecha) = year(now()) and m.franquicia like '%"+franquicia+"%'"

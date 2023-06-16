@@ -3,7 +3,7 @@ from fastapi import APIRouter, Body, Depends
 from fastapi.security import OAuth2PasswordBearer
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso,\
     obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia, \
-    obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo, obtener_versus_mes_dia
+    obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo, obtener_versus_mes_dia, obtener_versus_mes_dia_cantidad
 
 from auth.auth import authenticate_user
 
@@ -62,6 +62,10 @@ async def obtener_versus():
 @api_route.get("/obtener-versus-dia", status_code=200)
 async def obtener_versus_diario():
     return obtener_versus_mes_dia()
+
+@api_route.get("/obtener-versus-cantidad-dia", status_code=200)
+async def obtener_versus_diario_cantidad():
+    return obtener_versus_mes_dia_cantidad()
 
 
 @api_route.get("/obtener-metas-franquicias", status_code=200)
