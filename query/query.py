@@ -62,23 +62,23 @@ class QueryConsult:
                     if b_0 == 0:
                          results.append({"name": "DESCUENTO CHEQUES", "value": 0})
                     else:
-                        results.append({"name": "DESCUENTO CHEQUES", "value": int((j[0]-i[0])/i[0]*100)})
+                        results.append({"name": "DESCUENTO CHEQUES", "value": int((i[0]-j[0])/i[0]*100)})
                     if b_1 == 0:
                         results.append({"name": "NUEVOS INT", "value": 0})
                     else:
-                        results.append({"name": "NUEVOS INT", "value": int((j[1]-i[1])/i[1]*100)})
+                        results.append({"name": "NUEVOS INT", "value": int((i[1]-j[1])/i[1]*100)})
                     if b_2 == 0:
                         results.append({"name": "NUEVOS MET", "value":0})
                     else:
-                        results.append({"name": "NUEVOS MET", "value": int((j[2]-i[2])/i[2]*100)})
+                        results.append({"name": "NUEVOS MET", "value": int((i[2]-j[2])/i[2]*100)})
                     if b_3 == 0:
                         results.append({"name": "RECURR INT", "value": 0})
                     else:
-                        results.append({"name": "RECURR INT", "value": int((j[3]-i[3])/i[3]*100)})
+                        results.append({"name": "RECURR INT", "value": int((i[3]-j[3])/i[3]*100)})
                     if b_4 == 0:
                         results.append({"name": "RECURR MET", "value": 0})
                     else:   
-                        results.append({"name": "RECURR MET", "value": int((j[4]-i[4])/i[4]*100)})
+                        results.append({"name": "RECURR MET", "value": int((i[4]-j[4])/i[4]*100)})
             datos2.close()
         elif self.sucursal:
             for i in datos.fetchall():
