@@ -3,7 +3,8 @@ from fastapi import APIRouter, Body, Depends
 from fastapi.security import OAuth2PasswordBearer
 from query.query import obtener_cantidad_operaciones, obtener_suma_monto_operaciones, obtener_comparativo_desembolso,\
     obtener_sucursales_franquicia, suma_monto_operaciones_sucursales, obtener_versus_mes, obtener_metas_franquicia, \
-    obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo, obtener_versus_mes_dia, obtener_versus_mes_dia_cantidad
+    obtener_situacion_venta_actual, obtener_variacion_colocacion_banca_tipo, obtener_versus_mes_dia, obtener_versus_mes_dia_cantidad, \
+        obtener_lista_supervisores
 
 from auth.auth import authenticate_user
 
@@ -81,6 +82,11 @@ async def obtener_situacion():
 @api_route.post("/obtener-variacion-banca-tipo", status_code=200)
 async def obtener_variacion(filtros: Annotated[dict | None, Body()] = None):
     return obtener_variacion_colocacion_banca_tipo(filtros)
+
+
+@api_route.get("/obtener-supervisores", status_code=200)
+async def obtener_supervisores(filtros: Annotated[dict | None, Body()] = None):
+    return obtener_lista_supervisores()
 
 
 @api_route.post("/login")
