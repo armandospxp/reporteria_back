@@ -12,11 +12,12 @@ franquicia = "BOSAMAZ"
 
 
 class QueryConsult:
-    def __init__(self, engine, query, nombre=None, sucursal=None, versus=None, variacion=None, query2=None):
+    def __init__(self, engine, query, nombre=None, sucursal=None, versus=None, variacion=None, query2=None, supervisor=None):
         self.engine = engine
         self.query = query
         self.nombre = nombre
         self.sucursal = sucursal
+        self.supervisor = supervisor
         self.versus = versus
         self.variacion = variacion
         self.query2 = query2
@@ -89,6 +90,9 @@ class QueryConsult:
         elif self.sucursal:
             for i in datos.fetchall():
                 results.append({"name": i[0], "seleccionado": True})
+        elif self.supervisor:
+            for i in datos.fetchall():
+                results.append({"id":i[1],"name": i[0], "seleccionado": True})
         elif self.nombre:
             for n in self.nombre:
                 for i in datos.fetchall():
@@ -101,15 +105,24 @@ class QueryConsult:
         return results
 
 
-def obtener_cantidad_operaciones(fechas=None):
+def obtener_cantidad_operaciones(filtros=None):
     query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
         "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
         " WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
         franquicia+"%' "
-    if fechas:
-        query = query + "AND f.BFFCHV BETWEEN '"+fechas['fechaDesde']+"' AND '" + \
-            fechas['fechaHasta'] + \
-            "' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+    if filtros:
+        try:
+            if filtros['fechaDesde'] and filtros['fechaHasta']:
+                query = query + "AND f.BFFCHV BETWEEN '"+filtros['fechaDesde']+"' AND '" + \
+                    filtros['fechaHasta'] + \
+                    "' GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+        except:
+            if filtros['supervisores']:
+                lista_filtros = tuple(filtros['supervisores'])
+                query = query + "AND f.BFSUP in "+str(lista_filtros)+\
+                    "AND YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
+                # pdb.set_trace()
+                # query = query + "AND f.BFSUP in "+filtros['supervisores']
     else:
         query = query + \
             "AND YEAR(f.BFFCHV) = year(now()) and MONTH(f.BFFCHV) = MONTH(now()) GROUP BY l.FRGERSUC ORDER BY cantidad desc;"
@@ -162,17 +175,23 @@ def suma_monto_operaciones_sucursales(**kwargs):
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
         franquicia+"%' "
-    if kwargs:
+    try:
         query = query + "AND f.BFFCHV between '" + \
             kwargs['kwargs']['fechaDesde']+"' AND '"+kwargs['kwargs']['fechaHasta'] + \
             "' GROUP BY l.FRGERSUC ORDER BY monto desc;"
         qry = QueryConsult(db2_engine, query)
         return qry.obtener_datos()
-    else:
-        query = query + \
-            "AND year(f.BFFCHV) = year(now()) and month(f.BFFCHV) = month(now()) GROUP BY l.FRGERSUC ORDER BY monto desc;"
-        qry = QueryConsult(db2_engine, query)
-        return qry.obtener_datos()
+    except:
+        # pdb.set_trace()
+        try:
+            lista_filtros = tuple(kwargs['kwargs']['supervisores'])
+            query = query + "AND f.BFSUP in "+str(lista_filtros) + " GROUP BY l.FRGERSUC ORDER BY monto desc;"
+            return qry.obtener_datos()
+        except:
+            query = query + \
+                "AND year(f.BFFCHV) = year(now()) and month(f.BFFCHV) = month(now()) GROUP BY l.FRGERSUC ORDER BY monto desc;"
+            qry = QueryConsult(db2_engine, query)
+            return qry.obtener_datos()
 
 
 def obtener_comparativo_desembolso():
@@ -331,10 +350,10 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
     return qry.obtener_datos()
 
 def obtener_lista_supervisores():
-    query = "SELECT DISTINCT x.BCSNOM FROM DB2ADMIN.FSD0122 f "\
+    query = "SELECT DISTINCT trim(x.BCSNOM) as NOMBRE, x.BCSUPE AS ID FROM DB2ADMIN.FSD0122 f "\
         "JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
         "JOIN DB2ADMIN.FST027 x ON f.BFSUP = x.BCSUPE AND x.BCACTI = 'S' AND f.BFTIP = 'A' and "\
         "f.BFOPER not in (405,410) and "\
         "f.BFESTA in (7,10)"
-    qry = QueryConsult(db2_engine, query=query, sucursal=True)
+    qry = QueryConsult(db2_engine, query=query, supervisor=True)
     return qry.obtener_datos()
