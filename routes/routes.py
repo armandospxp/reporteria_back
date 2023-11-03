@@ -11,6 +11,9 @@ from auth.auth import authenticate_user
 api_route = APIRouter()
 
 
+franquicias = {1:'BOSAMAZ', 2:'ZAE'}
+
+
 @api_route.post("/cantidad-operaciones", status_code=200)
 async def obtener_cantidad_operaciones_ruta(fechas: Annotated[dict | None, Body()] = None):
     return obtener_cantidad_operaciones(fechas)

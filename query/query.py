@@ -8,7 +8,8 @@ import pdb
 
 global franquicia
 
-franquicia = "BOSAMAZ"
+# franquicia = "BOSAMAZ"
+franquicia = "1"
 
 
 class QueryConsult:
@@ -108,8 +109,7 @@ class QueryConsult:
 def obtener_cantidad_operaciones(filtros=None):
     query = "SELECT rtrim(l.FRGERSUC) AS sucursal, count(f.BFOPE1) cantidad "\
         "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-        " WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
-        franquicia+"%' "
+        " WHERE f.BFOPER NOT IN (405, 410) AND f.BFESTA IN (7, 10) AND l.FRCODE = "+franquicia
     if filtros:
         try:
             if filtros['fechaDesde'] and filtros['fechaHasta']:
@@ -138,9 +138,10 @@ def obtener_suma_monto_operaciones(fechas=None):
         "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE - 1 MONTHS) THEN f.BFSOLI ELSE 0 END) AS MES2, "\
         "SUM(CASE WHEN MONTH(f.BFFCHV) = MONTH(CURRENT DATE) THEN f.BFSOLI ELSE 0 END) AS MES3 " \
         "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+        "JOIN DB2ADMIN.FSTFRANLEV fr ON fr.FRCODE = l.FRCODE"\
         "WHERE f.BFFCHV >= CURRENT DATE - 3 MONTHS and f.BFOPER not in (405,410) and "\
-            "f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
-            "GROUP BY l.FRGERSUC;"
+            # "f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+    "f.BFESTA in (7,10) AND fr.FRCODE = "+franquicia+" GROUP BY l.FRGERSUC;"
     datos = conn.execute(text(query))
     results = []
     if (band == 0):
@@ -173,8 +174,9 @@ def obtener_suma_monto_operaciones(fechas=None):
 def suma_monto_operaciones_sucursales(**kwargs):
     query = "SELECT rtrim(l.FRGERSUC) AS sucursal, sum(f.BFSOLI) monto "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
-            "WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + \
-        franquicia+"%' "
+            "JOIN DB2ADMIN.FSTFRAN FR ON f.FRCODE = l.FRCODE "\
+            # "WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND l.FRDIRSUC LIKE '%" + franquicia+"%' "
+    "WHERE f.BFOPER not in (405,410) and f.BFESTA in (7,10) AND fr.FRCODE = "+franquicia
     try:
         query = query + "AND f.BFFCHV between '" + \
             kwargs['kwargs']['fechaDesde']+"' AND '"+kwargs['kwargs']['fechaHasta'] + \
@@ -197,9 +199,10 @@ def suma_monto_operaciones_sucursales(**kwargs):
 def obtener_comparativo_desembolso():
     query = "SELECT rtrim(c.SUCURSAL) as SUCRUSAL, sum(CASE WHEN YEAR(c.FECHAOPE) = YEAR(CURRENT_DATE()) AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
         "AS operaciones_anio_actual, sum(CASE WHEN YEAR(c.FECHAOPE) = YEAR(CURRENT_DATE()) - 1 AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 THEN c.MONTO_DESEMBOLSADO ELSE 0 END) "\
-        "AS operaciones_anio_pasado FROM operaciones.colocacion c WHERE YEAR(c.FECHAOPE) IN (YEAR(CURRENT_DATE()), YEAR(CURRENT_DATE()) - 1) "\
-        "AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 AND c.FRANQUICIA like '%" + \
-        franquicia + "%' GROUP BY c.SUCURSAL"
+        # "AS operaciones_anio_pasado FROM operaciones.colocacion c WHERE YEAR(c.FECHAOPE) IN (YEAR(CURRENT_DATE()), YEAR(CURRENT_DATE()) - 1) "\
+    "AS operaciones_anio_pasado FROM operaciones.colocacion c WHERE YEAR(c.FECHAOPE) IN (YEAR(CURRENT_DATE()), YEAR(CURRENT_DATE()) - 1) "\
+        # "AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 AND c.FRANQUICIA like '%" + franquicia + "%' GROUP BY c.SUCURSAL"
+    "AND MONTH(c.FECHAOPE) >= MONTH(CURRENT_DATE()) - 3 AND c.FRANQUICIA like '%" + franquicia + "%' GROUP BY c.SUCURSAL"
 
     datos = conn.execute(text(query))
     results = []
@@ -216,8 +219,9 @@ def obtener_comparativo_desembolso():
 
 
 def obtener_sucursales_franquicia(alt_franquicia=None):
-    query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '" + \
-        franquicia+"%';"
+    query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f JOIN DB2ADMIN.FSTFRAN fr WHERE fr.FRCODE = " + franquicia
+    # query = "SELECT rtrim(f.FRGERSUC) FROM DB2ADMIN.FSTFRANLEV f WHERE f.FRDIRSUC LIKE '" + \
+    #     franquicia+"%';"
     qry = QueryConsult(db2_engine, query, sucursal=True)
     return qry.obtener_datos()
 
@@ -226,9 +230,11 @@ def obtener_versus_mes(alt_franquicia=None):
     query = "SELECT EXTRACT(MONTH FROM c.BFFCHV) AS mes, "\
         "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) THEN c.BFSOLI ELSE 0 END) AS año_actual, "\
         "SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 THEN c.BFSOLI ELSE 0 END) AS año_pasado "\
-        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
-        "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%"+franquicia+"%' "\
-        "GROUP BY EXTRACT(MONTH FROM c.BFFCHV) ORDER BY EXTRACT(MONTH FROM c.BFFCHV);"
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC JOIN DB2ADMIN.FSTFRAN fr on f.FRCODE = fr.FRCODE WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        # "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+    "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND fr.FRCODE ="+franquicia\
+    # "AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%"+franquicia+"%' "\
+    " GROUP BY EXTRACT(MONTH FROM c.BFFCHV) ORDER BY EXTRACT(MONTH FROM c.BFFCHV);"
     qry = QueryConsult(db2_engine, query, versus=True)
     return qry.obtener_datos()
 
@@ -236,9 +242,11 @@ def obtener_versus_mes(alt_franquicia=None):
 def obtener_versus_mes_dia(alt_franquicia=None):
     query = "SELECT EXTRACT(DAY FROM c.BFFCHV) AS dia, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN c.BFSOLI ELSE 0 END) "\
         "AS año_actual, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN c.BFSOLI ELSE 0 END) AS año_pasado "\
-        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
-        "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%BOSAMAZ%' "\
-        "GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC JOIN DB2ADMIN.FSTFRAN fr on f.FRCODE = fr.FRCODE WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        # "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+    "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) "\
+        "AND fr.FRCODE = "+franquicia +\
+" GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
     qry = QueryConsult(db2_engine, query, versus=True)
     return qry.obtener_datos()
 
@@ -246,9 +254,11 @@ def obtener_versus_mes_dia(alt_franquicia=None):
 def obtener_versus_mes_dia_cantidad(alt_franquicia=None):
     query = "SELECT EXTRACT(DAY FROM c.BFFCHV) AS dia, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN 1 ELSE 0 END) "\
         "AS año_actual, SUM(CASE WHEN EXTRACT(YEAR FROM c.BFFCHV) = YEAR(CURRENT DATE) -1 AND DAYOFWEEK(C.BFFCHV) BETWEEN 2 AND 6 THEN 1 ELSE 0 END) AS año_pasado "\
-        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
-        "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%BOSAMAZ%' "\
-        "GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
+        "FROM DB2ADMIN.FSD0122 c JOIN DB2ADMIN.FSTFRANLEV f ON c.BFSUCU = f.FRSUC JOIN DB2ADMIN.FSTFRAN fr ON f.FRCODE = fr.CODE WHERE EXTRACT(YEAR FROM c.BFFCHV) IN (YEAR(CURRENT DATE), YEAR(CURRENT DATE)-1) "\
+        "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND fr.FRCODE = "+franquicia +\
+    " GROUP BY EXTRACT(DAY FROM c.BFFCHV) ORDER BY EXTRACT(DAY FROM c.BFFCHV);"
+        # "AND MONTH(c.BFFCHV) = month(current_date) AND c.BFTIP = 'A' and c.BFOPER not in (405,410) and c.BFESTA in (7,10) AND f.FRDIRSUC LIKE '%BOSAMAZ%' "\
+        
     qry = QueryConsult(db2_engine, query, versus=True)
     return qry.obtener_datos()
 
@@ -260,8 +270,9 @@ def obtener_metas_franquicia():
 
 
 def obtener_situacion_venta_actual():
-    query = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC "\
-        "WHERE s.FRDIRSUC LIKE '%BOSAMAZ%' AND YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10)"
+    query = "SELECT sum(f.BFSOLI) monto FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV s ON f.BFSUCU = s.FRSUC JOIN DB2ADMIN.FSTFRAN fr on s.FRCODE = fr.FRCODE"\
+        "WHERE YEAR(f.BFFCHV) = YEAR (now()) AND MONTH(BFFCHV) = month(now()) and f.BFOPER not in (405,410) and f.BFESTA in (7,10) "\
+        "AND s.FRCODE ="+franquicia
     qry = QueryConsult(db2_engine, query, nombre=["actual"])
     return qry.obtener_datos()
 
@@ -277,8 +288,9 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN f.BFOPER IN (606) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "JOIN DB2ADMIN.FSTFRAN fr ON l.FRCODE = fr.FRCODE "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
+            "AND fr.FRCODE = "+franquicia+ \
                 "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
         query2 = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -286,9 +298,11 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN f.BFOPER IN (606) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            "JOIN DB2ADMIN.FSTFRANLEV fr on l.FRCODE = fr.FRCODE "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -1 "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
-            "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            # "AND l.FRDIRSUC LIKE '"+franquicia + \
+        "AND fr.FRCODE ="+franquicia + \
+        " and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     elif debito == 2:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -296,8 +310,10 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN f.BFOPER IN (606) THEN f.BFSOLI ELSE 0 END) AS recurr_int, "\
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
+            " JOIN DB2ADMIN.FSDTFRAN fr ON l.FRCODE = fr.FRCODE "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) =  year(now()) -"+str(anterior)+" AND month(f.BFFCHV) = month(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
+            ""\
+            "AND fr.FRCODE = "+franquicia + \
                 "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
         query2 = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (601) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -306,8 +322,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (605) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) =  year(now()) -"+str(anterior+1)+" "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
-            "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRCODE ="+franquicia + \
+            " and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     elif anterior:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -316,8 +332,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -"+str(anterior)+" "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
-                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRCODE "+franquicia + \
+                " and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
         query2 = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
             "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
@@ -325,8 +341,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -"+str(anterior+1)+" "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
-            "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRCODE ="+franquicia + \
+            " and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     else:
         query = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
@@ -335,8 +351,8 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
-                "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
+            "AND l.FRCODE ="+franquicia + \
+                " and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
         query2 = "SELECT SUM(CASE WHEN f.BFOPER IN (401) THEN f.BFSOLI ELSE 0 END) AS descuento_cheques, "\
             "SUM(CASE WHEN f.BFOPER IN (201) THEN f.BFSOLI ELSE 0 END) AS nuevos_int, "\
             "SUM(CASE WHEN f.BFOPER IN (200) THEN f.BFSOLI ELSE 0 END) AS nuevos_met, "\
@@ -344,14 +360,14 @@ def obtener_variacion_colocacion_banca_tipo(filtros: dict = None):
             "SUM(CASE WHEN  f.BFOPER IN (202, 205) THEN f.BFSOLI ELSE 0 END) AS recurr_met "\
             "FROM DB2ADMIN.FSD0122 f JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC "\
             "WHERE f.BFAGEN IN ("+tipo_banca+") AND year(f.BFFCHV) = year(now()) -1 "\
-            "AND l.FRDIRSUC LIKE '"+franquicia + \
+            "AND l.FRCODE LIKE '"+franquicia + \
             "%' and f.BFOPER not in (405,410) and f.BFESTA in (7,10) and f.BFTIP = 'A';"
     qry = QueryConsult(db2_engine, query=query, query2=query2, variacion=True)
     return qry.obtener_datos()
 
 def obtener_lista_supervisores():
     query = "SELECT DISTINCT trim(x.BCSNOM) as NOMBRE, x.BCSUPE AS ID FROM DB2ADMIN.FSD0122 f "\
-        "JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC AND l.FRDIRSUC LIKE '%"+franquicia+"%' "\
+        "JOIN DB2ADMIN.FSTFRANLEV l ON f.BFSUCU = l.FRSUC AND l.FRCODE ="+franquicia+\
         "JOIN DB2ADMIN.FST027 x ON f.BFSUP = x.BCSUPE AND x.BCACTI = 'S' AND f.BFTIP = 'A' and "\
         "f.BFOPER not in (405,410) and "\
         "f.BFESTA in (7,10)"
