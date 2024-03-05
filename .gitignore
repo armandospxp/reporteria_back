@@ -21,3 +21,5 @@ docs.zip
 *~
 .*.sw?
 *.pyc 
+*.csv
+*.xlsx
